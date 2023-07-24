@@ -136,10 +136,7 @@ async fn add_starboard_entry(
     current_reactions: usize,
 ) -> Result<(), Error> {
     // Formatting message
-    let link = format!("[Jump!]({})", message.link());
-    let channel = message.channel(ctx).await?.to_string();
-
-    let starboard_message = format!("{channel} | {emoji_string} {current_reactions}");
+    let starboard_message = format!("{} | {emoji_string} {current_reactions}", message.link());
 
     // Post embed
     let post = starboard_channel
@@ -155,7 +152,6 @@ async fn add_starboard_entry(
                 })
                 .url("http://example.com/0") // Required for embed images to group
                 .description(message.content.as_str())
-                .field("Source", link, false)
                 .color(EMBED_COLOR);
 
                 if let Some((_, attachment)) = attachments.next() {

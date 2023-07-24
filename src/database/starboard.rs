@@ -158,6 +158,11 @@ async fn add_starboard_entry(
                     e.image(attachment.url.as_str());
                 }
 
+                if message.attachments.len() <= 1  {
+                    e.footer(|f| f.text(message.id))
+                        .timestamp(message.timestamp);
+                }
+
                 e
             });
 

@@ -14,7 +14,7 @@ tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.17", features = [ "env-filter" ] }
 
 [dependencies.sqlx]
-version = "0.7.0"
+version = "0.7.1"
 features = [ "macros", "runtime-tokio-rustls", "postgres" ]
 
 [profile.dev.package.sqlx-macros]

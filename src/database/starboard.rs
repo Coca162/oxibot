@@ -137,7 +137,6 @@ async fn add_starboard_entry(
 ) -> Result<(), Error> {
     // Formatting message
     let starboard_message = format!("{} | {emoji_string} {current_reactions}", message.link());
-
     // Post embed
     let post = starboard_channel
         .send_message(ctx, |m| {
@@ -153,6 +152,10 @@ async fn add_starboard_entry(
                 .url("http://example.com/0") // Required for embed images to group
                 .description(message.content.as_str())
                 .color(EMBED_COLOR);
+
+                if let Some(message) = &message.referenced_message {
+                    e.field("Replied Message:", &message.content, false);
+                }
 
                 if let Some((_, attachment)) = attachments.next() {
                     e.image(attachment.url.as_str());

@@ -40,13 +40,15 @@ async fn main() {
         tags(),
     ];
 
-    if let Err(err) = dotenv() {
-        if err.not_found() && !not_using_dotenv() {
-            println!("You have not included a .env file! If this is intentional you can disable this warning with `DISABLE_NO_DOTENV_WARNING=1`")
-        } else {
-            panic!("Panicked on dotenv error: {err}");
+    match dotenv() {
+        Ok(_) => (),
+        Err(err) if err.not_found() => {
+            if !not_using_dotenv() {
+                println!("You have not included a .env file! If this is intentional you can disable this warning with `DISABLE_NO_DOTENV_WARNING=1`")
+            }
         }
-    };
+        Err(err) => panic!("Dotenv error: {}", err),
+    }
 
     tracing_subscriber::fmt::init();
 

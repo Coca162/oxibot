@@ -109,12 +109,18 @@ async fn main() {
 }
 
 fn not_using_dotenv() -> bool {
-    match env::var("DISABLE_NO_DOTENV_WARNING").as_deref() {
-        Ok("1") => true,
-        Ok("0") => false,
-        Ok(_) => panic!("DISABLE_NO_DOTENV_WARNING environment variable is equal to something other then 1 or 0"),
+    match env::var("DISABLE_NO_DOTENV_WARNING")
+        .map(|x| x.to_ascii_lowercase())
+        .as_deref()
+    {
+        Ok("1" | "true") => true,
+        Ok("0" | "false") => false,
+        Ok(_) => panic!("DISABLE_NO_DOTENV_WARNING environment variable is not a valid value"),
         Err(VarError::NotPresent) => false,
-        Err(err) => panic!("{err}")
+        Err(VarError::NotUnicode(err)) => panic!(
+            "DISABLE_NO_DOTENV_WARNING environment variable is set to valid Unicode, found: {:?}",
+            err
+        ),
     }
 }
 

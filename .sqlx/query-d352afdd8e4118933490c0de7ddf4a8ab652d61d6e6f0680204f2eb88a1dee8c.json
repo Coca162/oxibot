@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT command_name, tag_description FROM tag WHERE tag.guild_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "command_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "tag_description",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "d352afdd8e4118933490c0de7ddf4a8ab652d61d6e6f0680204f2eb88a1dee8c"
+}

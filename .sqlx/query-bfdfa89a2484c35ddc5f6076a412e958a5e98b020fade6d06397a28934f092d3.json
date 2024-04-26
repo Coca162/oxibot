@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM tag WHERE tag.guild_id = $1 AND tag.command_name = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "bfdfa89a2484c35ddc5f6076a412e958a5e98b020fade6d06397a28934f092d3"
+}

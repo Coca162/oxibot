@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE tag SET tag_description = $1 WHERE tag.guild_id = $2 AND tag.command_name = $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b8c5577b05b86cacce8431eabc0e97aa71b5bf6898f336dc6995ad71a76647c6"
+}

@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM starboard_tracked WHERE starboard_tracked.starboard_channel = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "69946ce89c84d0c31408f6d051175282b30bc048c0a59c6aeb85f7c79f573779"
+}

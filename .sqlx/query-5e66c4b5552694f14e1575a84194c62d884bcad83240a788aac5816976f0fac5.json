@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM starboard WHERE starboard.starboard_channel = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5e66c4b5552694f14e1575a84194c62d884bcad83240a788aac5816976f0fac5"
+}

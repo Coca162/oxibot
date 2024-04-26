@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT starboard_channel as \"starboard_channel: database::ChannelId\", min_reactions FROM starboard \n                    WHERE starboard.guild_id = $1 AND starboard.emoji = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "starboard_channel: database::ChannelId",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "min_reactions",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "b7f72055df4133613125b267cc64ef827e6fd4f004084f2652dda1e3868e43af"
+}

@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT starboard_post_id as \"id: database::MessageId\", starboard_channel as \"channel: database::ChannelId\" FROM starboard_tracked \n                    WHERE starboard_tracked.message_id = $1 AND starboard_tracked.emoji = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: database::MessageId",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "channel: database::ChannelId",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "225463fea473e5059bcaa97dc4c0f501fc7fb0db5ded6a1d40e97965191f2603"
+}

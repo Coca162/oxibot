@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE guild SET welcome_channel = $1 WHERE guild.discord_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "315ebfb62cce47519a68393d5edfa567b57fddf6316289dc66ff2947f96a6383"
+}

@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM starboard_tracked WHERE starboard_tracked.message_id = $1\n        RETURNING starboard_post_id as \"starboard_post_id: database::MessageId\", starboard_channel as \"starboard_channel: database::ChannelId\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "starboard_post_id: database::MessageId",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "starboard_channel: database::ChannelId",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "7286bc080126c6dce26e6e63b7b68bdb523a42554881ae18ebaf5f8e5ea84e0c"
+}

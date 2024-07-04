@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT goodbye_channel as \"goodbye_channel: database::ChannelId\", (goodbye_messages)[1 + trunc(random() * array_length(goodbye_messages, 1))::int] as goodbye_message\n                    FROM guild WHERE guild.discord_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "goodbye_channel: database::ChannelId",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "goodbye_message",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      true,
+      null
+    ]
+  },
+  "hash": "e204742e869c5d92034dfc158159f45229754c6f83d3f57d3b118ed0faf21812"
+}

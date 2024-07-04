@@ -4,6 +4,7 @@ use serenity::Context;
 
 mod channel_delete;
 mod guild_member_addition;
+mod guild_member_removal;
 mod message_delete;
 mod reaction_add;
 mod reaction_remove;
@@ -23,6 +24,9 @@ pub async fn event_handler(ctx: &Context, event: &Event<'_>, data: &Data) -> Res
         }
         Event::GuildMemberAddition { new_member } => {
             guild_member_addition::handle(new_member, data, ctx).await?;
+        }
+        Event::GuildMemberRemoval { guild_id, user, ..  } => {
+            guild_member_removal::handle(guild_id, user, data, ctx).await?;
         }
         Event::ChannelDelete { channel } => {
             channel_delete::handle(channel, data).await?;

@@ -136,7 +136,11 @@ async fn add_starboard_entry(
     current_reactions: usize,
 ) -> Result<(), Error> {
     // Formatting message
-    let starboard_message = format!("{} | {emoji_string} {current_reactions}", message.link());
+    let link = format!("[Jump!]({})", message.link());
+    let channel = message.channel(ctx).await?.to_string();
+
+    let starboard_message = format!("{channel} | {emoji_string} {current_reactions}");
+
     // Post embed
     let post = starboard_channel
         .send_message(ctx, |m| {
@@ -151,19 +155,11 @@ async fn add_starboard_entry(
                 })
                 .url("http://example.com/0") // Required for embed images to group
                 .description(message.content.as_str())
+                .field("Source", link, false)
                 .color(EMBED_COLOR);
-
-                if let Some(message) = &message.referenced_message {
-                    e.field("Replied Message:", &message.content, false);
-                }
 
                 if let Some((_, attachment)) = attachments.next() {
                     e.image(attachment.url.as_str());
-                }
-
-                if message.attachments.len() <= 1  {
-                    e.footer(|f| f.text(message.id))
-                        .timestamp(message.timestamp);
                 }
 
                 e

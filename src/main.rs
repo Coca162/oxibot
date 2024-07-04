@@ -2,7 +2,7 @@ use std::env;
 use std::env::VarError;
 
 use commands::{
-    guild::guild, help::help, ping::pong, starboard::starboard, tags::*, welcome::welcome,
+    guild::guild, help::help, ping::pong, starboard::starboard, tags::*, welcome::welcome, goodbye::goodbye,
 };
 
 pub use database::Data;
@@ -35,20 +35,19 @@ async fn main() {
         starboard(),
         guild(),
         welcome(),
+        goodbye(),
         tag_edit(),
         tag_list(),
         tags(),
     ];
 
-    match dotenv() {
-        Ok(_) => (),
-        Err(err) if err.not_found() => {
-            if !not_using_dotenv() {
-                println!("You have not included a .env file! If this is intentional you can disable this warning with `DISABLE_NO_DOTENV_WARNING=1`")
-            }
+    if let Err(err) = dotenv() {
+        if err.not_found() && !not_using_dotenv() {
+            println!("You have not included a .env file! If this is intentional you can disable this warning with `DISABLE_NO_DOTENV_WARNING=1`")
+        } else {
+            panic!("Panicked on dotenv error: {err}");
         }
-        Err(err) => panic!("Dotenv error: {}", err),
-    }
+    };
 
     tracing_subscriber::fmt::init();
 
@@ -111,18 +110,12 @@ async fn main() {
 }
 
 fn not_using_dotenv() -> bool {
-    match env::var("DISABLE_NO_DOTENV_WARNING")
-        .map(|x| x.to_ascii_lowercase())
-        .as_deref()
-    {
-        Ok("1" | "true") => true,
-        Ok("0" | "false") => false,
-        Ok(_) => panic!("DISABLE_NO_DOTENV_WARNING environment variable is not a valid value"),
+    match env::var("DISABLE_NO_DOTENV_WARNING").as_deref() {
+        Ok("1") => true,
+        Ok("0") => false,
+        Ok(_) => panic!("DISABLE_NO_DOTENV_WARNING environment variable is equal to something other then 1 or 0"),
         Err(VarError::NotPresent) => false,
-        Err(VarError::NotUnicode(err)) => panic!(
-            "DISABLE_NO_DOTENV_WARNING environment variable is set to valid Unicode, found: {:?}",
-            err
-        ),
+        Err(err) => panic!("{err}")
     }
 }
 

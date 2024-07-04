@@ -4,3 +4,4 @@ pub mod ping;
 pub mod starboard;
 pub mod tags;
 pub mod welcome;
+pub mod goodbye;

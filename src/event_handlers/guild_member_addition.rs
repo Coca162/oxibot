@@ -1,5 +1,3 @@
-use std::mem;
-
 use crate::database;
 use crate::{serenity, Data, Error};
 use poise::serenity_prelude::{Mention, Mentionable};
@@ -27,13 +25,13 @@ pub async fn handle(new_member: &Member, data: &Data, ctx: &Context) -> Result<(
         ctx,
         welcome_channel,
         welcome_configs.welcome_message,
-        " joined a server without any welcome message, how uncreative!",
+        "{} joined a server without any welcome message, how uncreative!",
         new_member.mention(),
     )
     .await
 }
 
-async fn membership_event(
+pub async fn membership_event(
     ctx: &Context,
     channel: ChannelId,
     message: Option<String>,
@@ -52,11 +50,11 @@ async fn membership_event(
             default_message
         });
 
-    // SAFETY: we are transmuting to a u64 bitfield, and discord supports silent pings with this one
-    const SILENT_FLAG: MessageFlags = unsafe { mem::transmute(4096_u64) };
-
     channel
-        .send_message(ctx, |x| x.content(message).flags(SILENT_FLAG))
+        .send_message(ctx, |x| {
+            x.content(message)
+                .flags(MessageFlags::SUPPRESS_NOTIFICATIONS)
+        })
         .await?;
 
     Ok(())

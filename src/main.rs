@@ -2,7 +2,8 @@ use std::env;
 use std::env::VarError;
 
 use commands::{
-    guild::guild, help::help, ping::pong, starboard::starboard, tags::*, welcome::welcome, goodbye::goodbye,
+    goodbye::goodbye, guild::guild, help::help, ping::pong, starboard::starboard, tags::*,
+    welcome::welcome,
 };
 
 pub use database::Data;

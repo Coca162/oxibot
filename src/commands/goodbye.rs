@@ -21,7 +21,7 @@ pub async fn message(_ctx: Context<'_>, _arg: String) -> Result<(), Error> {
 pub async fn add(ctx: Context<'_>, message: String) -> Result<(), Error> {
     // SAFETY: Since this command is guild_only this should NEVER fail
     let guild = ctx.guild_id().unwrap().0 as i64;
-//blah
+    //blah
     sqlx::query!("UPDATE guild SET goodbye_messages = array_append(goodbye_messages, $1) WHERE guild.discord_id = $2", message, guild)
         .execute(&ctx.data().db)
         .await?;

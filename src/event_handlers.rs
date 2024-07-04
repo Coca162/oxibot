@@ -25,7 +25,7 @@ pub async fn event_handler(ctx: &Context, event: &Event<'_>, data: &Data) -> Res
         Event::GuildMemberAddition { new_member } => {
             guild_member_addition::handle(new_member, data, ctx).await?;
         }
-        Event::GuildMemberRemoval { guild_id, user, ..  } => {
+        Event::GuildMemberRemoval { guild_id, user, .. } => {
             guild_member_removal::handle(guild_id, user, data, ctx).await?;
         }
         Event::ChannelDelete { channel } => {

@@ -7,7 +7,12 @@ use serenity::model::channel::MessageFlags;
 use serenity::{ChannelId, Context};
 use std::fmt::Write;
 
-pub async fn handle(guild_id: &GuildId, user: &User, data: &Data, ctx: &Context) -> Result<(), Error> {
+pub async fn handle(
+    guild_id: &GuildId,
+    user: &User,
+    data: &Data,
+    ctx: &Context,
+) -> Result<(), Error> {
     let channel = guild_id.0 as i64;
 
     let goodbye_configs = sqlx::query!(

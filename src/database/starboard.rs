@@ -161,7 +161,7 @@ async fn add_starboard_entry(
                     e.image(attachment.url.as_str());
                 }
 
-                if message.attachments.len() <= 1  {
+                if message.attachments.len() <= 1 {
                     e.footer(|f| f.text(message.id))
                         .timestamp(message.timestamp);
                 }
@@ -175,7 +175,7 @@ async fn add_starboard_entry(
                         .url(format!("http://example.com/{}", i / 4))
                         .image(attachment.url.as_str());
 
-                    if i / 4 == message.attachments.len() / 4 && i % 4 == 0  {
+                    if i / 4 == message.attachments.len() / 4 && i % 4 == 0 {
                         e.footer(|f| f.text(message.id))
                             .timestamp(message.timestamp);
                     }

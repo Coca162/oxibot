@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE guild SET goodbye_messages = array_append(goodbye_messages, $1) WHERE guild.discord_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "cb5bd0376da5e9ed25ec62447af60194c005a773c6ce623c80d13c1aec5262c8"
+}

@@ -2,7 +2,8 @@ use std::env;
 use std::env::VarError;
 
 use commands::{
-    guild::guild, help::help, ping::pong, starboard::starboard, tags::*, welcome::welcome,
+    goodbye::goodbye, guild::guild, help::help, ping::pong, starboard::starboard, tags::*,
+    welcome::welcome,
 };
 
 pub use database::Data;
@@ -35,6 +36,7 @@ async fn main() {
         starboard(),
         guild(),
         welcome(),
+        goodbye(),
         tag_edit(),
         tag_list(),
         tags(),

@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT goodbye_messages FROM guild WHERE guild.discord_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "goodbye_messages",
+        "type_info": "TextArray"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "79f26c97c3d3b48b21ef1d3bf1c1847a2d837e1054fe2c1bbd1e9ac8664e6762"
+}

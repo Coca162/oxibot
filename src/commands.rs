@@ -1,3 +1,4 @@
+pub mod burg;
 pub mod goodbye;
 pub mod guild;
 pub mod help;

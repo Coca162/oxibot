@@ -2,7 +2,7 @@ use std::env;
 use std::env::VarError;
 
 use commands::{
-    goodbye::goodbye, guild::guild, help::help, ping::pong, starboard::starboard, tags::*,
+    burg::*, goodbye::goodbye, guild::guild, help::help, ping::pong, starboard::starboard, tags::*,
     welcome::welcome,
 };
 
@@ -40,6 +40,12 @@ async fn main() {
         tag_edit(),
         tag_list(),
         tags(),
+        burg_vote(),
+        silly_check(),
+        mp_give(),
+        mp_destroy(),
+        mp_clear(),
+        mp_prune(),
     ];
 
     match dotenv() {

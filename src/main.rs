@@ -88,8 +88,15 @@ async fn main() {
         })
         .build();
 
+
+    let mut client = Client::builder(token, INTENTS)
+        .activity(ActivityData::watching("C code become rusty"))
+        .framework(framework)
+        .await
+        .unwrap();
+
     // ctrl+c handler
-    let shard_handler = framework.shard_manager().clone();
+    let shard_handler = client.shard_manager.clone();
     tokio::spawn(async move {
         tokio::signal::ctrl_c()
             .await
@@ -98,12 +105,6 @@ async fn main() {
         shard_handler.shutdown_all().await;
         db.close().await;
     });
-
-    let mut client = Client::builder(token, INTENTS)
-        .activity(ActivityData::watching("C code become rusty"))
-        .framework(framework)
-        .await
-        .unwrap();
 
     tracing::info!("Starting oxibot!");
     client.start().await.unwrap();

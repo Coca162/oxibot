@@ -7,14 +7,14 @@ edition = "2021"
 
 [dependencies]
 poise = "0.6.1"
-tokio = { version = "1.39.2", features = [ "rt-multi-thread", "macros", "sync", "signal" ] }
-dotenvy = "0.15.7"
-dashmap = "6.0.1"
-tracing = "0.1.40"
-tracing-subscriber = { version = "0.3.18", features = [ "env-filter" ] }
+tokio = { version = "1.41", features = [ "rt-multi-thread", "macros", "sync", "signal" ] }
+dotenvy = "0.15"
+dashmap = "6.1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = [ "env-filter" ] }
 
 [dependencies.sqlx]
-version = "0.8.0"
+version = "0.8"
 features = [ "macros", "runtime-tokio-rustls", "postgres" ]
 
 [profile.dev.package.sqlx-macros]

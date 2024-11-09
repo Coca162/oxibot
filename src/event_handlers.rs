@@ -1,6 +1,5 @@
 use crate::{serenity, Data, Error};
-use poise::Event;
-use serenity::Context;
+use serenity::{Context, FullEvent};
 
 mod channel_delete;
 mod guild_member_addition;
@@ -9,26 +8,26 @@ mod message_delete;
 mod reaction_add;
 mod reaction_remove;
 
-pub async fn event_handler(ctx: &Context, event: &Event<'_>, data: &Data) -> Result<(), Error> {
+pub async fn event_handler(ctx: &Context, event: &FullEvent, data: &Data) -> Result<(), Error> {
     match event {
-        Event::ReactionAdd { add_reaction } => {
+        FullEvent::ReactionAdd { add_reaction } => {
             reaction_add::handle(add_reaction, data, ctx).await?;
         }
-        Event::ReactionRemove { removed_reaction } => {
+        FullEvent::ReactionRemove { removed_reaction } => {
             reaction_remove::handle(removed_reaction, data, ctx).await?
         }
-        Event::MessageDelete {
+        FullEvent::MessageDelete {
             deleted_message_id, ..
         } => {
             message_delete::handle(deleted_message_id, data, ctx).await?;
         }
-        Event::GuildMemberAddition { new_member } => {
+        FullEvent::GuildMemberAddition { new_member } => {
             guild_member_addition::handle(new_member, data, ctx).await?;
         }
-        Event::GuildMemberRemoval { guild_id, user, .. } => {
+        FullEvent::GuildMemberRemoval { guild_id, user, .. } => {
             guild_member_removal::handle(guild_id, user, data, ctx).await?;
         }
-        Event::ChannelDelete { channel } => {
+        FullEvent::ChannelDelete { channel, .. } => {
             channel_delete::handle(channel, data).await?;
         }
         _ => (),

@@ -1,6 +1,10 @@
+use std::default::Default;
+
 use crate::database;
 use crate::{Data, Error, EMBED_COLOR};
-use poise::serenity_prelude::{ChannelId, Context, GuildId, Message, MessageId, Reaction, User};
+use poise::serenity_prelude::{
+    ChannelId, Context, CreateEmbed, CreateEmbedAuthor, CreateEmbedFooter, CreateMessage, EditMessage, GuildId, Message, MessageId, Reaction, User
+};
 use sqlx::Error as SQLxError;
 
 pub async fn add_starboard_tables(
@@ -12,9 +16,9 @@ pub async fn add_starboard_tables(
 ) -> Result<(), SQLxError> {
     sqlx::query!(
         "INSERT INTO starboard (guild_id, emoji, starboard_channel, min_reactions) VALUES ($1, $2, $3, $4)",
-        guild_id.0 as i64,
+        guild_id.get() as i64,
         emoji,
-        channel_id.0 as i64,
+        channel_id.get() as i64,
         min_reactions
     )
     .execute(&data.db)
@@ -31,7 +35,7 @@ pub async fn manage_starboard_entry(
 ) -> Result<(), Error> {
     // Check if this reaction is in a guild, and get guild id
     let guild_id = match reaction.guild_id {
-        Some(GuildId(id)) => id as i64,
+        Some(id) => id.get() as i64,
         None => return Ok(()),
     };
 
@@ -100,7 +104,7 @@ async fn add_or_edit_starboard_entry(
     let possible_entry = sqlx::query!(
         r#"SELECT starboard_post_id as "id: database::MessageId", starboard_channel as "channel: database::ChannelId" FROM starboard_tracked 
                     WHERE starboard_tracked.message_id = $1 AND starboard_tracked.emoji = $2"#,
-        message.id.0 as i64,
+        message.id.get() as i64,
         emoji_string
     )
     .fetch_optional(&data.db)
@@ -135,67 +139,60 @@ async fn add_starboard_entry(
     emoji_string: &str,
     current_reactions: usize,
 ) -> Result<(), Error> {
-    // Formatting message
-    let starboard_message = format!("{} | {emoji_string} {current_reactions}", message.link());
-    // Post embed
-    let post = starboard_channel
-        .send_message(ctx, |m| {
-            m.content(starboard_message);
+    let mut attachments = message.attachments.iter().take(10).enumerate();
 
-            let mut attachments = message.attachments.iter().take(10).enumerate();
+    let mut main_embed = CreateEmbed::new()
+        .author(CreateEmbedAuthor::new(message.author.name.clone()).icon_url(message.author.face()))
+        .url("http://example.com/0")
+        .description(message.content.clone())
+        .color(EMBED_COLOR);
 
-            m.add_embed(|e| {
-                e.author(|a| {
-                    a.icon_url(message.author.face())
-                        .name(message.author.name.clone())
-                })
-                .url("http://example.com/0") // Required for embed images to group
-                .description(message.content.as_str())
-                .color(EMBED_COLOR);
+    if let Some(message) = &message.referenced_message {
+        main_embed = main_embed.field("Replied Message:", &message.content, false);
+    }
 
-                if let Some(message) = &message.referenced_message {
-                    e.field("Replied Message:", &message.content, false);
-                }
+    if let Some((_, attachment)) = attachments.next() {
+        main_embed = main_embed.image(attachment.url.as_str());
+    }
 
-                if let Some((_, attachment)) = attachments.next() {
-                    e.image(attachment.url.as_str());
-                }
+    if message.attachments.len() <= 1 {
+        main_embed = main_embed
+            .footer(CreateEmbedFooter::new(message.id.to_string()))
+            .timestamp(message.timestamp);
+    }
 
-                if message.attachments.len() <= 1 {
-                    e.footer(|f| f.text(message.id))
-                        .timestamp(message.timestamp);
-                }
+    let mut new_entry = CreateMessage::new()
+        .content(format!(
+            "{} | {emoji_string} {current_reactions}",
+            message.link()
+        ))
+        .add_embed(main_embed);
 
-                e
-            });
+    for (i, attachment) in attachments {
+        let mut embed = CreateEmbed::new()
+            .color(EMBED_COLOR)
+            .url(format!("http://example.com/{}", i / 4))
+            .image(attachment.url.as_str());
 
-            for (i, attachment) in attachments {
-                m.add_embed(|e| {
-                    e.color(EMBED_COLOR)
-                        .url(format!("http://example.com/{}", i / 4))
-                        .image(attachment.url.as_str());
+        if i / 4 == message.attachments.len() / 4 && i % 4 == 0 {
+            embed = embed
+                .footer(CreateEmbedFooter::new(message.id.to_string()))
+                .timestamp(message.timestamp);
+        }
 
-                    if i / 4 == message.attachments.len() / 4 && i % 4 == 0 {
-                        e.footer(|f| f.text(message.id))
-                            .timestamp(message.timestamp);
-                    }
+        new_entry = new_entry.add_embed(embed);
+    }
 
-                    e
-                });
-            }
-
-            m
-        })
-        .await?;
+    let post = starboard_channel.send_message(ctx, new_entry).await?;
 
     // Add entry
     sqlx::query!(
         r#"INSERT INTO starboard_tracked 
         (message_id, emoji, starboard_channel, starboard_post_id, reaction_count) VALUES ($1, $2, $3, $4, $5)"#,
-        message.id.0 as i64,
+        message.id.get() as i64,
         emoji_string,
-        starboard_channel.0 as i64,
-        post.id.0 as i64,
+        starboard_channel.get() as i64,
+        post.id.get() as i64,
         current_reactions as i32
     ).execute(&data.db)
     .await?;
@@ -216,7 +213,7 @@ async fn edit_starboard_entry(
 
     sqlx::query!(
         "UPDATE starboard_tracked SET reaction_count = $3 WHERE starboard_tracked.starboard_post_id = $1 AND starboard_tracked.emoji = $2",
-        message.0 as i64,
+        message.get() as i64,
         emoji_string,
         reactions as i32
     ).execute(&data.db)
@@ -225,7 +222,7 @@ async fn edit_starboard_entry(
     let content =
         post.content.trim_end_matches(char::is_numeric).to_string() + &reactions.to_string();
 
-    post.edit(ctx, |x| x.content(content)).await?;
+    post.edit(ctx, EditMessage::new().content(content)).await?;
 
     Ok(())
 }
@@ -240,8 +237,8 @@ pub async fn remove_starboard_entry_with_channel(
     let records = sqlx::query!(
         r#"DELETE FROM starboard_tracked WHERE starboard_tracked.message_id = $1 AND starboard_tracked.starboard_channel = $2
         RETURNING starboard_post_id as "starboard_post_id: database::MessageId""#,
-        message.0 as i64,
-        starboard_channel.0 as i64
+        message.get() as i64,
+        starboard_channel.get() as i64
     )
     .fetch_all(&data.db)
     .await?;
@@ -265,7 +262,7 @@ pub async fn remove_starboard_entry(
     let entries: Vec<_> = sqlx::query!(
         r#"DELETE FROM starboard_tracked WHERE starboard_tracked.message_id = $1
         RETURNING starboard_post_id as "starboard_post_id: database::MessageId", starboard_channel as "starboard_channel: database::ChannelId""#,
-        message.0 as i64,
+        message.get() as i64,
     )
     .fetch_all(&data.db)
     .await?;
@@ -284,7 +281,7 @@ pub async fn remove_starboard_entry(
 
 /// Remove the starboard tables associated with `channel_id`
 pub async fn delete_starboard_tables(data: &Data, channel_id: ChannelId) -> Result<(), SQLxError> {
-    let id = channel_id.0 as i64;
+    let id = channel_id.get() as i64;
 
     let mut trans = data.db.begin().await?;
 

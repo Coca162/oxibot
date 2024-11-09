@@ -8,11 +8,13 @@ use commands::{
 
 pub use database::Data;
 use dotenvy::dotenv;
+use poise::serenity_prelude::ActivityData;
+use poise::serenity_prelude::Client;
 
 use crate::event_handlers::event_handler;
 use poise::serenity_prelude as serenity;
 use poise::Prefix;
-use serenity::{Activity, Color, GatewayIntents};
+use serenity::{Color, GatewayIntents};
 
 mod commands;
 mod database;
@@ -63,39 +65,28 @@ async fn main() {
 
     let db = data.db.clone();
 
-    // init settings for the framework
-    let framework_builder = poise::Framework::builder()
+    let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
             prefix_options: poise::PrefixFrameworkOptions {
                 prefix: primary_prefix,
                 additional_prefixes: addition_prefixes,
-                edit_tracker: Some(poise::EditTracker::for_timespan(
-                    std::time::Duration::from_secs(120),
-                )),
+                edit_tracker: Some(
+                    poise::EditTracker::for_timespan(std::time::Duration::from_secs(120)).into(),
+                ),
                 ..Default::default()
             },
             commands,
             event_handler: |ctx, event, _framework, data| Box::pin(event_handler(ctx, event, data)),
             ..Default::default()
         })
-        .token(token)
-        .intents(INTENTS)
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
-                ctx.set_activity(Activity::watching("C code become rusty"))
-                    .await;
-
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
 
                 Ok(data)
             })
-        });
-
-    // actually init the framework
-    let framework = framework_builder
-        .build()
-        .await
-        .expect("Cannot create the bot framework!");
+        })
+        .build();
 
     // ctrl+c handler
     let shard_handler = framework.shard_manager().clone();
@@ -104,12 +95,18 @@ async fn main() {
             .await
             .expect("Couldn't register a ctrl+c handler!");
         tracing::info!("Shutting down oxibot!");
-        shard_handler.lock().await.shutdown_all().await;
+        shard_handler.shutdown_all().await;
         db.close().await;
     });
 
+    let mut client = Client::builder(token, INTENTS)
+        .activity(ActivityData::watching("C code become rusty"))
+        .framework(framework)
+        .await
+        .unwrap();
+
     tracing::info!("Starting oxibot!");
-    framework.start().await.unwrap();
+    client.start().await.unwrap();
 }
 
 fn not_using_dotenv() -> bool {

@@ -1,12 +1,12 @@
 use crate::database;
 use crate::{serenity, Data, Error};
-use poise::serenity_prelude::{Mention, Mentionable};
+use poise::serenity_prelude::{CreateMessage, Mention, Mentionable};
 use serenity::model::channel::MessageFlags;
 use serenity::{ChannelId, Context, Member};
 use std::fmt::Write;
 
 pub async fn handle(new_member: &Member, data: &Data, ctx: &Context) -> Result<(), Error> {
-    let channel = new_member.guild_id.0 as i64;
+    let channel = new_member.guild_id.get() as i64;
 
     let welcome_configs = sqlx::query!(
         r#"SELECT welcome_channel as "welcome_channel: database::ChannelId", (welcome_messages)[1 + trunc(random() * array_length(welcome_messages, 1))::int] as welcome_message
@@ -51,10 +51,12 @@ pub async fn membership_event(
         });
 
     channel
-        .send_message(ctx, |x| {
-            x.content(message)
-                .flags(MessageFlags::SUPPRESS_NOTIFICATIONS)
-        })
+        .send_message(
+            ctx,
+            CreateMessage::new()
+                .content(message)
+                .flags(MessageFlags::SUPPRESS_NOTIFICATIONS),
+        )
         .await?;
 
     Ok(())

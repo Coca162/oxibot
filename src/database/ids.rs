@@ -5,20 +5,20 @@ macro_rules! database_id {
         pub struct $i(pub i64);
 
         impl $i {
-            pub fn into_serenity(self) -> poise::serenity_prelude::id::$i {
-                poise::serenity_prelude::id::$i(self.0 as u64)
+            pub fn into_serenity(self) -> poise::serenity_prelude::model::id::$i {
+                (unsafe {::core::num::NonZero::new_unchecked(self.0 as u64) }).into()
             }
         }
 
-        impl From<$i> for poise::serenity_prelude::id::$i {
+        impl From<$i> for poise::serenity_prelude::model::id::$i {
             fn from(id: $i) -> Self {
                 id.into_serenity()
             }
         }
 
-        impl From<poise::serenity_prelude::id::$i> for $i {
-            fn from(poise::serenity_prelude::id::$i(id): poise::serenity_prelude::id::$i) -> Self {
-                Self(id as i64)
+        impl From<poise::serenity_prelude::model::id::$i> for $i {
+            fn from(id: poise::serenity_prelude::model::id::$i) -> Self {
+                Self(id.get() as i64)
             }
         }
     };

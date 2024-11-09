@@ -9,7 +9,7 @@ pub async fn handle(
     data: &Data,
     ctx: &Context,
 ) -> Result<(), Error> {
-    let channel = guild_id.0 as i64;
+    let channel = guild_id.get() as i64;
 
     let goodbye_configs = sqlx::query!(
         r#"SELECT goodbye_channel as "goodbye_channel: database::ChannelId", (goodbye_messages)[1 + trunc(random() * array_length(goodbye_messages, 1))::int] as goodbye_message

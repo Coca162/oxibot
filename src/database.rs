@@ -40,7 +40,7 @@ pub async fn init_data() -> Data {
 pub async fn init_guild(data: &Data, guild_id: GuildId) -> Result<(), Error> {
     sqlx::query!(
         "INSERT INTO guild (discord_id) VALUES ($1)",
-        guild_id.get() as i64
+        guild_id.into_db()
     )
     .execute(&data.db)
     .await?;

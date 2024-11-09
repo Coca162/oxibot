@@ -1,4 +1,4 @@
-use crate::database;
+use crate::database::{self, IntoDatabase};
 use crate::{serenity, Data, Error};
 use poise::serenity_prelude::{CreateMessage, Mention, Mentionable};
 use serenity::model::channel::MessageFlags;
@@ -6,24 +6,21 @@ use serenity::{ChannelId, Context, Member};
 use std::fmt::Write;
 
 pub async fn handle(new_member: &Member, data: &Data, ctx: &Context) -> Result<(), Error> {
-    let channel = new_member.guild_id.get() as i64;
-
     let welcome_configs = sqlx::query!(
         r#"SELECT welcome_channel as "welcome_channel: database::ChannelId", (welcome_messages)[1 + trunc(random() * array_length(welcome_messages, 1))::int] as welcome_message
                     FROM guild WHERE guild.discord_id = $1"#,
-        &channel
+        new_member.guild_id.into_db()
     )
     .fetch_one(&data.db)
     .await?;
 
-    let welcome_channel = match welcome_configs.welcome_channel {
-        Some(welcome_channel) => welcome_channel.into_serenity(),
-        None => return Ok(()),
+    let Some(welcome_channel) = welcome_configs.welcome_channel else {
+        return Ok(());
     };
 
     membership_event(
         ctx,
-        welcome_channel,
+        welcome_channel.into_serenity(),
         welcome_configs.welcome_message,
         "{} joined a server without any welcome message, how uncreative!",
         new_member.mention(),

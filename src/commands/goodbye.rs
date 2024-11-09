@@ -1,3 +1,4 @@
+use crate::database::IntoDatabase;
 use crate::serenity::Channel;
 use crate::{Context, Error};
 use std::fmt::Write;
@@ -21,7 +22,7 @@ pub async fn message(_ctx: Context<'_>, _arg: String) -> Result<(), Error> {
 )]
 pub async fn add(ctx: Context<'_>, message: String) -> Result<(), Error> {
     // SAFETY: Since this command is guild_only this should NEVER fail
-    let guild = ctx.guild_id().unwrap().get() as i64;
+    let guild = ctx.guild_id().unwrap().into_db();
     //blah
     sqlx::query!("UPDATE guild SET goodbye_messages = array_append(goodbye_messages, $1) WHERE guild.discord_id = $2", message, guild)
         .execute(&ctx.data().db)
@@ -36,7 +37,7 @@ pub async fn add(ctx: Context<'_>, message: String) -> Result<(), Error> {
 #[poise::command(slash_command, prefix_command, guild_only)]
 pub async fn list(ctx: Context<'_>) -> Result<(), Error> {
     // SAFETY: Since this command is guild_only this should NEVER fail
-    let guild = ctx.guild_id().unwrap().get() as i64;
+    let guild = ctx.guild_id().unwrap().into_db();
 
     let goodbye_messages = sqlx::query!(
         "SELECT goodbye_messages FROM guild WHERE guild.discord_id = $1",
@@ -46,12 +47,13 @@ pub async fn list(ctx: Context<'_>) -> Result<(), Error> {
     .await?
     .goodbye_messages;
 
-    let mut formated_messages: String = goodbye_messages
-        .into_iter()
-        .fold(String::new(), |item,mut message| {
-            writeln!(&mut message, "```\n{item}```").unwrap();
-            message
-        });
+    let mut formated_messages: String =
+        goodbye_messages
+            .into_iter()
+            .fold(String::new(), |item, mut message| {
+                writeln!(&mut message, "```\n{item}```").unwrap();
+                message
+            });
 
     formated_messages.pop();
 
@@ -74,9 +76,9 @@ pub async fn channel(_ctx: Context<'_>, _arg: String) -> Result<(), Error> {
     required_permissions = "MANAGE_CHANNELS"
 )]
 pub async fn change(ctx: Context<'_>, channel: Channel) -> Result<(), Error> {
-    let channel = channel.id().get() as i64;
+    let channel = channel.id().into_db();
     // SAFETY: Since this command is guild_only this should NEVER fail
-    let guild = ctx.guild_id().unwrap().get() as i64;
+    let guild = ctx.guild_id().unwrap().into_db();
 
     sqlx::query!(
         "UPDATE guild SET goodbye_channel = $1 WHERE guild.discord_id = $2",

@@ -88,7 +88,6 @@ async fn main() {
         })
         .build();
 
-
     let mut client = Client::builder(token, INTENTS)
         .activity(ActivityData::watching("C code become rusty"))
         .framework(framework)

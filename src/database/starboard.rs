@@ -1,9 +1,10 @@
 use std::default::Default;
 
-use crate::database;
+use crate::database::{self, IntoDatabase};
 use crate::{Data, Error, EMBED_COLOR};
 use poise::serenity_prelude::{
-    ChannelId, Context, CreateEmbed, CreateEmbedAuthor, CreateEmbedFooter, CreateMessage, EditMessage, GuildId, Message, MessageId, Reaction, User
+    ChannelId, Context, CreateEmbed, CreateEmbedAuthor, CreateEmbedFooter, CreateMessage,
+    EditMessage, GuildId, Message, MessageId, Reaction, User,
 };
 use sqlx::Error as SQLxError;
 
@@ -16,9 +17,9 @@ pub async fn add_starboard_tables(
 ) -> Result<(), SQLxError> {
     sqlx::query!(
         "INSERT INTO starboard (guild_id, emoji, starboard_channel, min_reactions) VALUES ($1, $2, $3, $4)",
-        guild_id.get() as i64,
+        guild_id.into_db(),
         emoji,
-        channel_id.get() as i64,
+        channel_id.into_db(),
         min_reactions
     )
     .execute(&data.db)
@@ -35,7 +36,7 @@ pub async fn manage_starboard_entry(
 ) -> Result<(), Error> {
     // Check if this reaction is in a guild, and get guild id
     let guild_id = match reaction.guild_id {
-        Some(id) => id.get() as i64,
+        Some(id) => id.into_db(),
         None => return Ok(()),
     };
 
@@ -104,7 +105,7 @@ async fn add_or_edit_starboard_entry(
     let possible_entry = sqlx::query!(
         r#"SELECT starboard_post_id as "id: database::MessageId", starboard_channel as "channel: database::ChannelId" FROM starboard_tracked 
                     WHERE starboard_tracked.message_id = $1 AND starboard_tracked.emoji = $2"#,
-        message.id.get() as i64,
+        message.id.into_db(),
         emoji_string
     )
     .fetch_optional(&data.db)
@@ -189,10 +190,10 @@ async fn add_starboard_entry(
     sqlx::query!(
         r#"INSERT INTO starboard_tracked 
         (message_id, emoji, starboard_channel, starboard_post_id, reaction_count) VALUES ($1, $2, $3, $4, $5)"#,
-        message.id.get() as i64,
+        message.id.into_db(),
         emoji_string,
-        starboard_channel.get() as i64,
-        post.id.get() as i64,
+        starboard_channel.into_db(),
+        post.id.into_db(),
         current_reactions as i32
     ).execute(&data.db)
     .await?;
@@ -213,7 +214,7 @@ async fn edit_starboard_entry(
 
     sqlx::query!(
         "UPDATE starboard_tracked SET reaction_count = $3 WHERE starboard_tracked.starboard_post_id = $1 AND starboard_tracked.emoji = $2",
-        message.get() as i64,
+        message.into_db(),
         emoji_string,
         reactions as i32
     ).execute(&data.db)
@@ -237,8 +238,8 @@ pub async fn remove_starboard_entry_with_channel(
     let records = sqlx::query!(
         r#"DELETE FROM starboard_tracked WHERE starboard_tracked.message_id = $1 AND starboard_tracked.starboard_channel = $2
         RETURNING starboard_post_id as "starboard_post_id: database::MessageId""#,
-        message.get() as i64,
-        starboard_channel.get() as i64
+        message.into_db(),
+        starboard_channel.into_db()
     )
     .fetch_all(&data.db)
     .await?;
@@ -262,7 +263,7 @@ pub async fn remove_starboard_entry(
     let entries: Vec<_> = sqlx::query!(
         r#"DELETE FROM starboard_tracked WHERE starboard_tracked.message_id = $1
         RETURNING starboard_post_id as "starboard_post_id: database::MessageId", starboard_channel as "starboard_channel: database::ChannelId""#,
-        message.get() as i64,
+        message.into_db(),
     )
     .fetch_all(&data.db)
     .await?;
@@ -281,7 +282,7 @@ pub async fn remove_starboard_entry(
 
 /// Remove the starboard tables associated with `channel_id`
 pub async fn delete_starboard_tables(data: &Data, channel_id: ChannelId) -> Result<(), SQLxError> {
-    let id = channel_id.get() as i64;
+    let id = channel_id.into_db();
 
     let mut trans = data.db.begin().await?;
 

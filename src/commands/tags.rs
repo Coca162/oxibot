@@ -1,9 +1,9 @@
-use crate::{Context, Error};
+use crate::{database::IntoDatabase, Context, Error};
 
 #[poise::command(prefix_command, guild_only, slash_command, aliases("t", "tag"))]
 pub async fn tags(ctx: Context<'_>, arg: String) -> Result<(), Error> {
     // SAFETY: Since this command is guild_only this should NEVER fail
-    let guild = ctx.guild_id().unwrap().get() as i64;
+    let guild = ctx.guild_id().unwrap().into_db();
 
     let possible_tag = sqlx::query!(
         "SELECT tag_description FROM tag WHERE tag.guild_id = $1 AND tag.command_name = $2",
@@ -26,7 +26,7 @@ pub async fn tag_list(ctx: Context<'_>) -> Result<(), Error> {
     ctx.defer_ephemeral().await?;
 
     // SAFETY: Since this command is guild_only this should NEVER fail
-    let guild = ctx.guild_id().unwrap().get() as i64;
+    let guild = ctx.guild_id().unwrap().into_db();
 
     let tags = sqlx::query!(
         "SELECT command_name, tag_description FROM tag WHERE tag.guild_id = $1",
@@ -76,7 +76,7 @@ pub async fn tag_edit(_ctx: Context<'_>, _arg: String) -> Result<(), Error> {
 )]
 async fn add(ctx: Context<'_>, name: String, #[rest] description: String) -> Result<(), Error> {
     // SAFETY: Since this command is guild_only this should NEVER fail
-    let guild = ctx.guild_id().unwrap().get() as i64;
+    let guild = ctx.guild_id().unwrap().into_db();
 
     sqlx::query!(
         "INSERT INTO tag (guild_id, command_name, tag_description) VALUES ($1, $2, $3)",
@@ -105,7 +105,7 @@ async fn edit(
     #[rest] new_description: String,
 ) -> Result<(), Error> {
     // SAFETY: Since this command is guild_only this should NEVER fail
-    let guild = ctx.guild_id().unwrap().get() as i64;
+    let guild = ctx.guild_id().unwrap().into_db();
 
     sqlx::query!(
         "UPDATE tag SET tag_description = $1 WHERE tag.guild_id = $2 AND tag.command_name = $3",
@@ -131,7 +131,7 @@ async fn edit(
 )]
 async fn remove(ctx: Context<'_>, name: String) -> Result<(), Error> {
     // SAFETY: Since this command is guild_only this should NEVER fail
-    let guild = ctx.guild_id().unwrap().get() as i64;
+    let guild = ctx.guild_id().unwrap().into_db();
 
     sqlx::query!(
         "DELETE FROM tag WHERE tag.guild_id = $1 AND tag.command_name = $2",

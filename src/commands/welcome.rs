@@ -1,5 +1,6 @@
 use crate::serenity::Channel;
 use crate::{Context, Error};
+use std::fmt::Write;
 
 #[poise::command(prefix_command, slash_command, subcommands("message", "channel"))]
 pub async fn welcome(_ctx: Context<'_>, _arg: String) -> Result<(), Error> {
@@ -45,10 +46,12 @@ pub async fn list(ctx: Context<'_>) -> Result<(), Error> {
     .await?
     .welcome_messages;
 
-    let mut formated_messages: String = welcome_messages
+    let mut formated_messages = welcome_messages
         .into_iter()
-        .map(|message| format!("```\n{message}```\n"))
-        .collect();
+        .fold(String::new(), |item,mut message| {
+            writeln!(&mut message, "```\n{item}```").unwrap();
+            message
+        });
 
     formated_messages.pop();
 

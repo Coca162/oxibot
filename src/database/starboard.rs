@@ -140,63 +140,80 @@ async fn add_starboard_entry(
     emoji_string: &str,
     current_reactions: usize,
 ) -> Result<(), Error> {
-    let mut attachments = message.attachments.iter().take(10).enumerate();
+    let mut tx = data.db.begin().await?;
 
-    let mut main_embed = CreateEmbed::new()
-        .author(CreateEmbedAuthor::new(message.author.name.clone()).icon_url(message.author.face()))
-        .url("http://example.com/0")
-        .description(message.content.clone())
-        .color(EMBED_COLOR);
+    // Add entry with temporary ID only for this transaction
+    sqlx::query!(
+        r#"INSERT INTO starboard_tracked 
+        (message_id, emoji, starboard_channel, starboard_post_id, reaction_count) VALUES ($1, $2, $3, 666, $4)"#,
+        message.id.into_db(),
+        emoji_string,
+        starboard_channel.into_db(),
+        current_reactions as i32
+    ).execute(&mut *tx)
+    .await?;
 
-    if let Some(message) = &message.referenced_message {
-        main_embed = main_embed.field("Replied Message:", &message.content, false);
-    }
+    let post = {
+        let mut attachments = message.attachments.iter().take(10).enumerate();
 
-    if let Some((_, attachment)) = attachments.next() {
-        main_embed = main_embed.image(attachment.url.as_str());
-    }
+        let mut main_embed = CreateEmbed::new()
+            .author(
+                CreateEmbedAuthor::new(message.author.name.clone()).icon_url(message.author.face()),
+            )
+            .url("http://example.com/0")
+            .description(message.content.clone())
+            .color(EMBED_COLOR);
 
-    if message.attachments.len() <= 1 {
-        main_embed = main_embed
-            .footer(CreateEmbedFooter::new(message.id.to_string()))
-            .timestamp(message.timestamp);
-    }
+        if let Some(message) = &message.referenced_message {
+            main_embed = main_embed.field("Replied Message:", &message.content, false);
+        }
 
-    let mut new_entry = CreateMessage::new()
-        .content(format!(
-            "{} | {emoji_string} {current_reactions}",
-            message.link()
-        ))
-        .add_embed(main_embed);
+        if let Some((_, attachment)) = attachments.next() {
+            main_embed = main_embed.image(attachment.url.as_str());
+        }
 
-    for (i, attachment) in attachments {
-        let mut embed = CreateEmbed::new()
-            .color(EMBED_COLOR)
-            .url(format!("http://example.com/{}", i / 4))
-            .image(attachment.url.as_str());
-
-        if i / 4 == message.attachments.len() / 4 && i % 4 == 0 {
-            embed = embed
+        if message.attachments.len() <= 1 {
+            main_embed = main_embed
                 .footer(CreateEmbedFooter::new(message.id.to_string()))
                 .timestamp(message.timestamp);
         }
 
-        new_entry = new_entry.add_embed(embed);
-    }
+        let mut new_entry = CreateMessage::new()
+            .content(format!(
+                "{} | {emoji_string} {current_reactions}",
+                message.link()
+            ))
+            .add_embed(main_embed);
 
-    let post = starboard_channel.send_message(ctx, new_entry).await?;
+        for (i, attachment) in attachments {
+            let mut embed = CreateEmbed::new()
+                .color(EMBED_COLOR)
+                .url(format!("http://example.com/{}", i / 4))
+                .image(attachment.url.as_str());
 
-    // Add entry
+            if i / 4 == message.attachments.len() / 4 && i % 4 == 0 {
+                embed = embed
+                    .footer(CreateEmbedFooter::new(message.id.to_string()))
+                    .timestamp(message.timestamp);
+            }
+
+            new_entry = new_entry.add_embed(embed);
+        }
+
+        new_entry
+    };
+
+    let post = starboard_channel.send_message(ctx, post).await?;
+
     sqlx::query!(
-        r#"INSERT INTO starboard_tracked 
-        (message_id, emoji, starboard_channel, starboard_post_id, reaction_count) VALUES ($1, $2, $3, $4, $5)"#,
+        r#"UPDATE starboard_tracked SET starboard_post_id = $1 WHERE message_id = $2 AND emoji = $3"#,
+        post.id.into_db(),
         message.id.into_db(),
         emoji_string,
-        starboard_channel.into_db(),
-        post.id.into_db(),
-        current_reactions as i32
-    ).execute(&data.db)
+    ).execute(&mut *tx)
     .await?;
+
+    tx.commit().await?;
 
     Ok(())
 }

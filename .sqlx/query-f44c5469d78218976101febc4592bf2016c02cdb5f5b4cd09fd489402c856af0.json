@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE starboard_tracked SET starboard_post_id = $1 WHERE message_id = $2 AND emoji = $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f44c5469d78218976101febc4592bf2016c02cdb5f5b4cd09fd489402c856af0"
+}

@@ -1,4 +1,4 @@
-use std::default::Default;
+use core::mem;
 
 use crate::database::{self, IntoDatabase};
 use crate::{Data, Error, EMBED_COLOR};
@@ -80,14 +80,14 @@ pub async fn manage_starboard_entry(
         add_or_edit_starboard_entry(
             ctx,
             data,
-            &message,
+            message,
             &reactions,
             emoji_string.as_str(),
             starboard_channel,
         )
         .await?;
     } else {
-        remove_starboard_entry_with_channel(ctx, data, &message.id, starboard_channel).await?;
+        remove_starboard_entry_with_channel(ctx, data, message.id, starboard_channel).await?;
     }
 
     Ok(())
@@ -97,7 +97,7 @@ pub async fn manage_starboard_entry(
 async fn add_or_edit_starboard_entry(
     ctx: &Context,
     data: &Data,
-    message: &Message,
+    message: Message,
     reactions: &[User],
     emoji_string: &str,
     channel: ChannelId,
@@ -135,7 +135,7 @@ async fn add_or_edit_starboard_entry(
 async fn add_starboard_entry(
     ctx: &Context,
     data: &Data,
-    message: &Message,
+    mut message: Message,
     starboard_channel: ChannelId,
     emoji_string: &str,
     current_reactions: usize,
@@ -154,7 +154,13 @@ async fn add_starboard_entry(
     .await?;
 
     let post = {
-        let mut attachments = message.attachments.iter().take(10).enumerate();
+        let mut attachments = mem::take(&mut message.attachments);
+
+        attachments.retain(|a| {
+            a.content_type
+                .as_deref()
+                .is_some_and(|t| t.starts_with("image/"))
+        });
 
         let mut main_embed = CreateEmbed::new()
             .author(
@@ -168,39 +174,35 @@ async fn add_starboard_entry(
             main_embed = main_embed.field("Replied Message:", &message.content, false);
         }
 
-        if let Some((_, attachment)) = attachments.next() {
-            main_embed = main_embed.image(attachment.url.as_str());
+        let mut extra_embeds = Vec::new();
+
+        if let Some((first, extra)) = attachments.split_first() {
+            main_embed = main_embed.image(first.url.as_str());
+
+            let mut i = 1;
+            for attachment in extra[..extra.len().min(10)].iter() {
+                let embed = CreateEmbed::new()
+                    .color(EMBED_COLOR)
+                    .url(format!("http://example.com/{}", i / 4))
+                    .image(attachment.url.as_str());
+
+                extra_embeds.push(embed);
+                i += 1;
+            }
         }
 
-        if message.attachments.len() <= 1 {
-            main_embed = main_embed
-                .footer(CreateEmbedFooter::new(message.id.to_string()))
-                .timestamp(message.timestamp);
-        }
+        let last = extra_embeds.last_mut().unwrap_or(&mut main_embed);
+        *last = mem::take(last)
+            .footer(CreateEmbedFooter::new(message.id.to_string()))
+            .timestamp(message.timestamp);
 
-        let mut new_entry = CreateMessage::new()
+        CreateMessage::new()
             .content(format!(
                 "{} | {emoji_string} {current_reactions}",
                 message.link()
             ))
-            .add_embed(main_embed);
-
-        for (i, attachment) in attachments {
-            let mut embed = CreateEmbed::new()
-                .color(EMBED_COLOR)
-                .url(format!("http://example.com/{}", i / 4))
-                .image(attachment.url.as_str());
-
-            if i / 4 == message.attachments.len() / 4 && i % 4 == 0 {
-                embed = embed
-                    .footer(CreateEmbedFooter::new(message.id.to_string()))
-                    .timestamp(message.timestamp);
-            }
-
-            new_entry = new_entry.add_embed(embed);
-        }
-
-        new_entry
+            .add_embed(main_embed)
+            .add_embeds(extra_embeds)
     };
 
     let post = starboard_channel.send_message(ctx, post).await?;
@@ -249,7 +251,7 @@ async fn edit_starboard_entry(
 pub async fn remove_starboard_entry_with_channel(
     ctx: &Context,
     data: &Data,
-    message: &MessageId,
+    message: MessageId,
     starboard_channel: ChannelId,
 ) -> Result<(), Error> {
     let records = sqlx::query!(

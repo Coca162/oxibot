@@ -14,13 +14,11 @@ use poise::serenity_prelude::Client;
 use crate::event_handlers::event_handler;
 use poise::serenity_prelude as serenity;
 use poise::Prefix;
-use serenity::{Color, GatewayIntents};
+use serenity::GatewayIntents;
 
 mod commands;
 mod database;
 mod event_handlers;
-
-const EMBED_COLOR: Color = Color::from_rgb(255, 172, 51);
 
 const INTENTS: GatewayIntents = GatewayIntents::non_privileged()
     .union(GatewayIntents::MESSAGE_CONTENT)

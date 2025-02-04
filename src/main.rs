@@ -3,7 +3,7 @@ use std::env::VarError;
 
 use commands::{
     goodbye::goodbye, guild::guild, help::help, ping::pong, starboard::starboard, tags::*,
-    welcome::welcome,
+    welcome::welcome, voting::*
 };
 
 pub use database::Data;
@@ -42,6 +42,8 @@ async fn main() {
         tag_edit(),
         tag_list(),
         tags(),
+        burg_vote(),
+        silly_check()
     ];
 
     match dotenv() {

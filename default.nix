@@ -17,7 +17,7 @@
     inherit src;
     strictDeps = true;
 
-    buildInputs = [];
+    buildInputs = [pkgs.openssl];
   };
 in
   craneLib.buildPackage commonArgs

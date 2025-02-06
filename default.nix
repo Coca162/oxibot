@@ -1,7 +1,7 @@
 {pkgs ? import <nixpkgs> {}}: let
   pins = import ./npins;
   inherit (pkgs) lib;
-  craneLib = pkgs.callPackage pins.crane {};
+  craneLib = import pins.crane {inherit pkgs;};
 
   unfilteredRoot = ./.;
   src = lib.fileset.toSource {

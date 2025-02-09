@@ -1,6 +1,4 @@
-use std::collections::HashMap;
-use std::fmt::Write;
-use std::{iter, ops::Not};
+use std::{collections::HashMap, fmt::Write, iter, ops::Not};
 
 use poise::serenity_prelude::{Message, ReactionType, User, UserId};
 
@@ -8,23 +6,22 @@ use crate::{Context, Error};
 
 #[poise::command(prefix_command, guild_only, aliases("b", "burg_vote"))]
 pub async fn burg_vote(ctx: Context<'_>, message: Message) -> Result<(), Error> {
-    let mut users_votes = HashMap::<UserId, (ReactionType, Option<ReactionType>, bool)>::new();
+    let mut users_votes =
+        HashMap::<UserId, Result<(ReactionType, Option<ReactionType>), User>>::new();
 
     for reactions in &message.reactions {
         for user in message
             .reaction_users(ctx, reactions.reaction_type.clone(), None, None)
             .await?
         {
-            match users_votes.get_mut(&user.id) {
-                Some((_, second @ None, false)) => *second = Some(reactions.reaction_type.clone()),
-                Some((_, None, true)) => {
-                    unreachable!("Unexpected true on bool for multivoting when 2nd is not Some")
-                }
-                Some((_, Some(_), bool)) => *bool = true,
-                None => {
-                    users_votes.insert(user.id, (reactions.reaction_type.clone(), None, false));
-                }
-            }
+            users_votes
+                .entry(user.id)
+                .and_modify(|x| match x {
+                    Ok((_, second @ None)) => *second = Some(reactions.reaction_type.clone()),
+                    ballot @ Ok((_, Some(_))) => *ballot = Err(user),
+                    Err(_) => (),
+                })
+                .or_insert_with(|| Ok((reactions.reaction_type.clone(), None)));
         }
     }
 
@@ -32,47 +29,44 @@ pub async fn burg_vote(ctx: Context<'_>, message: Message) -> Result<(), Error> 
 
     let mut multivoters = Vec::new();
 
-    for (user, (first, second, multivote)) in users_votes.into_iter() {
-        if multivote {
-            multivoters.push(user);
-            continue;
-        }
-
-        match second {
-            Some(second) => {
-                *party_votes.entry(first.clone()).or_insert(0) += 1;
-                *party_votes.entry(second.clone()).or_insert(0) += 1;
+    for vote in users_votes.into_values() {
+        match vote {
+            Ok((first, Some(second))) => {
+                *party_votes.entry(first).or_insert(0) += 1;
+                *party_votes.entry(second).or_insert(0) += 1;
             }
-            None => *party_votes.entry(first.clone()).or_insert(0) += 2,
-        };
+            Ok((first, None)) => *party_votes.entry(first).or_insert(0) += 2,
+            Err(user) => multivoters.push(user),
+        }
     }
 
     let total: usize = party_votes.values().sum();
 
-    let mut formatted = String::new();
+    let mut content = format!("Current Percentages (Total {total}):");
 
     // Maintain reaction order
-    for reaction in &message.reactions {
-        let (party, votes) = party_votes.remove_entry(&reaction.reaction_type).unwrap();
+    for party in message.reactions.iter().map(|r| &r.reaction_type) {
+        let votes = party_votes.remove(party).unwrap_or(0);
 
         let percent = votes as f64 / total as f64;
 
         write!(
-            &mut formatted,
+            &mut content,
             "\n {party} ({votes}): {:.2}%",
             percent * 100.0
         )?;
     }
 
-    if multivoters.is_empty() {
-        ctx.say(format!("Current Percentages (Total {total}): {formatted}"))
-            .await?;
-    } else {
-        ctx.say(format!(
-            "Current Percentages (Total {total}): {formatted}\nMultivoters: {multivoters:?}"
-        ))
-        .await?;
+    if multivoters.is_empty().not() {
+        content.push_str("\n\nMultivoters:");
+
+        for name in multivoters.iter().map(|x| x.display_name()) {
+            content.push('\n');
+            content.push_str(name);
+        }
     }
+
+    ctx.say(content).await?;
 
     Ok(())
 }

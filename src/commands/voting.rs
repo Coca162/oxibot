@@ -1,7 +1,15 @@
-use std::{collections::HashMap, fmt::Write, iter, ops::Not};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::Write,
+    iter,
+    ops::Not,
+};
 
 use poise::serenity_prelude::{Message, ReactionType, User, UserId};
-use serenity::futures::stream::{FuturesUnordered, StreamExt};
+use serenity::futures::{
+    stream::{FuturesUnordered, StreamExt},
+    Stream,
+};
 
 use crate::{Context, Error};
 
@@ -10,18 +18,7 @@ pub async fn burg_vote(ctx: Context<'_>, message: Message) -> Result<(), Error> 
     let mut users_votes =
         HashMap::<UserId, Result<(ReactionType, Option<ReactionType>), User>>::new();
 
-    let mut reaction_users = message
-        .reactions
-        .iter()
-        .map(|reaction| async move {
-            let reaction = &reaction.reaction_type;
-            message
-                .channel_id
-                .reaction_users(ctx, message.id, reaction.clone(), None, None)
-                .await
-                .map(|u| (reaction, u))
-        })
-        .collect::<FuturesUnordered<_>>();
+    let mut reaction_users = user_reaction_stream(ctx, &message);
 
     while let Some((reaction, users)) = reaction_users.next().await.transpose()? {
         for user in users {
@@ -86,15 +83,16 @@ pub async fn burg_vote(ctx: Context<'_>, message: Message) -> Result<(), Error> 
 pub async fn silly_check(ctx: Context<'_>, message: Message) -> Result<(), Error> {
     let mut users_votes = HashMap::<User, (ReactionType, Vec<ReactionType>)>::new();
 
-    for reactions in &message.reactions {
-        for user in message
-            .reaction_users(ctx, reactions.reaction_type.clone(), None, None)
-            .await?
-        {
-            users_votes
-                .entry(user)
-                .and_modify(|(_, l)| l.push(reactions.reaction_type.clone()))
-                .or_insert((reactions.reaction_type.clone(), Vec::new()));
+    {
+        let mut reaction_users = user_reaction_stream(ctx, &message);
+
+        while let Some((reaction, users)) = reaction_users.next().await.transpose()? {
+            for user in users {
+                users_votes
+                    .entry(user)
+                    .and_modify(|(_, l)| l.push(reaction.clone()))
+                    .or_insert_with(|| (reaction.clone(), Vec::new()));
+            }
         }
     }
 
@@ -137,4 +135,70 @@ pub async fn silly_check(ctx: Context<'_>, message: Message) -> Result<(), Error
     ctx.say(final_output).await?;
 
     Ok(())
+}
+
+#[poise::command(
+    prefix_command,
+    guild_only,
+    aliases("reactions"),
+    subcommands("list_users")
+)]
+pub async fn count_reactions(ctx: Context<'_>, message: Message) -> Result<(), Error> {
+    let mut users_votes = HashSet::new();
+
+    let mut reaction_users = user_reaction_stream(ctx, &message);
+
+    while let Some((_, users)) = reaction_users.next().await.transpose()? {
+        for user in users {
+            users_votes.insert(user.id);
+        }
+    }
+
+    ctx.say(format!("Counted {}", users_votes.len())).await?;
+
+    Ok(())
+}
+
+#[poise::command(prefix_command, guild_only, aliases("list"))]
+pub async fn list_users(ctx: Context<'_>, message: Message) -> Result<(), Error> {
+    let mut users_votes = HashSet::new();
+
+    let mut reaction_users = user_reaction_stream(ctx, &message);
+
+    while let Some((_, users)) = reaction_users.next().await.transpose()? {
+        for user in users {
+            users_votes.insert(user);
+        }
+    }
+
+    let content = users_votes.iter().fold(
+        format!("Counted ({}):", users_votes.len()),
+        |mut content, user| {
+            content.push_str("\n- ");
+            content.push_str(user.display_name());
+            content
+        },
+    );
+
+    ctx.say(content).await?;
+
+    Ok(())
+}
+
+fn user_reaction_stream<'a>(
+    ctx: Context<'a>,
+    message: &'a Message,
+) -> impl Stream<Item = serenity::Result<(&'a ReactionType, Vec<User>)>> + use<'a> {
+    message
+        .reactions
+        .iter()
+        .map(|reaction| async move {
+            let reaction = &reaction.reaction_type;
+            message
+                .channel_id
+                .reaction_users(ctx, message.id, reaction.clone(), None, None)
+                .await
+                .map(|u| (reaction, u))
+        })
+        .collect::<FuturesUnordered<_>>()
 }

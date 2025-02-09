@@ -44,6 +44,7 @@ async fn main() {
         tags(),
         burg_vote(),
         silly_check(),
+        count_reactions()
     ];
 
     match dotenv() {

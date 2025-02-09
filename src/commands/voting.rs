@@ -1,6 +1,7 @@
 use std::{collections::HashMap, fmt::Write, iter, ops::Not};
 
 use poise::serenity_prelude::{Message, ReactionType, User, UserId};
+use serenity::futures::stream::{FuturesUnordered, StreamExt};
 
 use crate::{Context, Error};
 
@@ -9,19 +10,29 @@ pub async fn burg_vote(ctx: Context<'_>, message: Message) -> Result<(), Error> 
     let mut users_votes =
         HashMap::<UserId, Result<(ReactionType, Option<ReactionType>), User>>::new();
 
-    for reactions in &message.reactions {
-        for user in message
-            .reaction_users(ctx, reactions.reaction_type.clone(), None, None)
-            .await?
-        {
+    let mut reaction_users = message
+        .reactions
+        .iter()
+        .map(|reaction| async move {
+            let reaction = &reaction.reaction_type;
+            message
+                .channel_id
+                .reaction_users(ctx, message.id, reaction.clone(), None, None)
+                .await
+                .map(|u| (reaction, u))
+        })
+        .collect::<FuturesUnordered<_>>();
+
+    while let Some((reaction, users)) = reaction_users.next().await.transpose()? {
+        for user in users {
             users_votes
                 .entry(user.id)
                 .and_modify(|x| match x {
-                    Ok((_, second @ None)) => *second = Some(reactions.reaction_type.clone()),
+                    Ok((_, second @ None)) => *second = Some(reaction.clone()),
                     ballot @ Ok((_, Some(_))) => *ballot = Err(user),
                     Err(_) => (),
                 })
-                .or_insert_with(|| Ok((reactions.reaction_type.clone(), None)));
+                .or_insert_with(|| Ok((reaction.clone(), None)));
         }
     }
 

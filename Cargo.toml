@@ -6,11 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = { version = "1.43", features = [ "rt-multi-thread", "macros", "sync", "signal" ] }
-dotenvy = "0.15"
-dashmap = "6.1"
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = [ "env-filter" ] }
+tokio = { version = "1", features = [ "rt-multi-thread", "macros", "sync", "signal" ] }
+dotenvy = "0.15.7"
+dashmap = "6.1.0"
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.22", features = [ "env-filter" ] }
 
 [dependencies.poise]
 default-features = false
@@ -23,7 +23,7 @@ features = ["native_tls_backend"]
 version = "=0.12.4" # Fix reaction deserialization
 
 [dependencies.sqlx]
-version = "0.8"
+version = "0.8.6"
 features = [ "macros", "runtime-tokio-rustls", "postgres" ]
 
 [profile.dev.package.sqlx-macros]

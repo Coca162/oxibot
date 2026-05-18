@@ -1,5 +1,6 @@
 use std::env;
 use std::env::VarError;
+use std::path::PathBuf;
 
 use commands::{
     goodbye::goodbye, guild::guild, help::help, ping::pong, starboard::starboard, tags::*,
@@ -44,10 +45,14 @@ async fn main() {
         tags(),
         burg_vote(),
         silly_check(),
-        count_reactions()
+        count_reactions(),
     ];
 
-    match dotenv() {
+    let cred_dir = env::var_os("CREDENTIALS_DIRECTORY");
+    match cred_dir
+        .map(|p| dotenvy::from_path(PathBuf::from(p).join(".env")))
+        .unwrap_or_else(|| dotenv().map(drop))
+    {
         Ok(_) => (),
         Err(err) if err.not_found() => {
             if !not_using_dotenv() {

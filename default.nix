@@ -3,8 +3,8 @@
   crane = pkgs.fetchFromGitHub {
     owner = "ipetkov";
     repo = "crane";
-    rev = "v0.23.2";
-    hash = "sha256-BEp040fMklOW2+ttpNUKivlE0hzpv0AAP+0kG47uVCk=";
+    rev = "v0.23.4";
+    hash = "sha256-nnGD2f8OlAZT2i5OfwikJsw+ifWfiA4d6A8BWlgOXV0=";
   };
   craneLib = import crane {inherit pkgs;};
 

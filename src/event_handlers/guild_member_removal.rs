@@ -10,7 +10,7 @@ pub async fn handle(
     ctx: &Context,
 ) -> Result<(), Error> {
     let goodbye_configs = sqlx::query!(
-        r#"SELECT goodbye_channel as "goodbye_channel: database::ChannelId", (goodbye_messages)[1 + trunc(random() * array_length(goodbye_messages, 1))::int] as goodbye_message
+        r#"SELECT goodbye_channel as "goodbye_channel: database::ChannelId", (goodbye_messages)[ceil(random() * array_length(goodbye_messages, 1))::int] as goodbye_message
                     FROM guild WHERE guild.discord_id = $1"#,
         guild_id.into_db()
     )

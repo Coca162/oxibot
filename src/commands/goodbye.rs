@@ -75,8 +75,8 @@ pub async fn channel(_ctx: Context<'_>, _arg: String) -> Result<(), Error> {
     guild_only,
     required_permissions = "MANAGE_CHANNELS"
 )]
-pub async fn change(ctx: Context<'_>, channel: Channel) -> Result<(), Error> {
-    let channel = channel.id().into_db();
+pub async fn change(ctx: Context<'_>, channel: Option<Channel>) -> Result<(), Error> {
+    let channel = channel.map(|c| c.id().into_db());
     // SAFETY: Since this command is guild_only this should NEVER fail
     let guild = ctx.guild_id().unwrap().into_db();
 
